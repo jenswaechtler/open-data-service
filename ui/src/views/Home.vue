@@ -12,7 +12,21 @@
         </v-toolbar-title>
       </v-toolbar>
       <v-card-text>
-        <location-decomposer />
+        <location-decomposer v-model="decomposedUrl" />
+      </v-card-text>
+    </v-card>
+
+    <v-card class="mx-auto mt-5">
+      <v-toolbar
+        dense
+        class="elevation-0"
+      >
+        <v-toolbar-title>
+          <span>Location Decompose: Returned to wrapping component</span>
+        </v-toolbar-title>
+      </v-toolbar>
+      <v-card-text>
+        {{ decomposedUrl }}
       </v-card-text>
     </v-card>
   </div>
@@ -23,11 +37,16 @@
 import Vue from 'vue'
 import Component from 'vue-class-component'
 
-import LocationDecomposer from '../datasource/edit/adapter/LocationDecomposer.vue'
+import LocationDecomposer, { DecomposedUrl } from '../datasource/edit/adapter/LocationDecomposer.vue'
 
 @Component({
   components: { LocationDecomposer }
 })
 export default class Home extends Vue {
+
+  private decomposedUrl: DecomposedUrl = {
+    url: "www.example.com/:id",
+    parameters: [ { key: "id", default: "1" } ]
+  }
 }
 </script>
