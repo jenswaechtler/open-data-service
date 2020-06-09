@@ -30,7 +30,6 @@
       </v-card-text>
     </v-card>
   </div>
-
 </template>
 
 <script lang="ts">
@@ -43,10 +42,13 @@ import LocationDecomposer, { DecomposedUrl } from '../datasource/edit/adapter/Lo
   components: { LocationDecomposer }
 })
 export default class Home extends Vue {
-
   private decomposedUrl: DecomposedUrl = {
-    url: "www.example.com/:id",
-    parameters: [ { key: "id", default: "1" } ]
+    url: 'http://www.example.org/top/suche?stichwort=wiki&ausgabe=liste#last',
+    baseurl: '',
+    rest: [],
+    anchor: '',
+    queryparameters: [],
+    parameters: []
   }
 }
 </script>
