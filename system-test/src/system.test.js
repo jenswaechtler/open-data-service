@@ -460,6 +460,65 @@ describe('System-Test', () => {
     expect(deletionResponse.status).toEqual(204)
     sleep(2000) // takes up to 2sec to reach scheduler
   }, 30000)
+
+  test('Test 7: Create non-periodic pipeline with transformation', async () => {
+    // Prepare datasource mock
+    await request(MOCK_SERVER_URL)
+      .post('/data/test7')
+      .send(sourceData)
+
+    const expectedData = Object.assign({}, sourceData)
+    expectedData.newField = 12
+
+    const datasourceConfig = generateDataSourceConfig(MOCK_SERVER_DOCKER + '/data/test7', false)
+
+    console.log(`[Test 7] Trying to create datasource: ${JSON.stringify(datasourceConfig)}`)
+
+    // Add datasource to adapter service
+    const adapterResponse = await request(ADAPTER_URL)
+      .post('/datasources')
+      .send(datasourceConfig)
+    const datasourceId = adapterResponse.body.id
+    console.log(`[Test 7] Successfully created datasource ${datasourceId}`)
+
+    // Add pipeline to core service
+    const pipelineConfig = generatePipelineConfig(datasourceId)
+    pipelineConfig.transformation = { func: 'data.newField = 12;return data;' }
+    const notification = generateNotification('data.newField === 12', MOCK_SERVER_DOCKER + '/notifications/test7')
+    pipelineConfig.notifications = [notification]
+
+    console.log(`[Test 7] Trying to create pipeline: ${JSON.stringify(pipelineConfig)}`)
+    const pipelineResponse = await request(CORE_URL)
+      .post('/pipelines')
+      .send(pipelineConfig)
+    const pipelineId = pipelineResponse.body.id
+    console.log(`[Test 7] Successfully created pipeline ${pipelineId} for datasource ${datasourceId}`)
+
+    // Wait for webhook notification
+    const webhookResponse = await checkWebhook('test7', 2000)
+    console.log(`[Test 7] Webhook response body: ${JSON.stringify(webhookResponse.body)}`)
+    expect(webhookResponse.body.location).toEqual(STORAGE_DOCKER + '/' + pipelineId)
+    expect(webhookResponse.body.timestamp).toBeDefined()
+
+    // Check if data has been stored correctly
+    const storageResponse = await request(STORAGE_URL)
+      .get('/' + pipelineId)
+    expect(storageResponse.status).toEqual(200)
+    expect(storageResponse.type).toEqual('application/json')
+    console.log(`[Test 7] Storage response body: ${JSON.stringify(storageResponse.body)}`)
+    expect(storageResponse.body[0].data).toEqual(expectedData)
+
+    // CLEAN-UP
+    let deletionResponse = await request(CORE_URL)
+      .delete(`/pipelines/${pipelineId}`)
+      .send()
+    expect(deletionResponse.status).toEqual(204)
+    deletionResponse = await request(ADAPTER_URL)
+      .delete(`/datasources/${datasourceId}`)
+      .send()
+    expect(deletionResponse.status).toEqual(204)
+    sleep(2000) // takes up to 2sec to reach scheduler
+  }, 30000)
 })
 
 function generateNotification (condition, url) {
